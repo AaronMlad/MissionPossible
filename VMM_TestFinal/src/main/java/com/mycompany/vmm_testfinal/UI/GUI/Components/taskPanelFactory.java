@@ -15,6 +15,7 @@ import com.mycompany.vmm_testfinal.Patterns.Interfaces.Observer;
 import com.mycompany.vmm_testfinal.Patterns.Interfaces.Task;
 import com.mycompany.vmm_testfinal.Patterns.Prototype.TaskClient;
 import com.mycompany.vmm_testfinal.Patterns.Tasks.ProjectTask;
+import com.mycompany.vmm_testfinal.Patterns.Tasks.SimpleTask;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -61,6 +62,9 @@ public class taskPanelFactory extends JPanel{
         currentPanel.setPreferredSize(new Dimension((int)(width*0.875),30));
         currentPanel.setBackground(Color.DARK_GRAY); //--------------CHANGE
         currentPanel.setName(task.getTitle());
+        currentPanel.putClientProperty("task", task);
+        currentPanel.putClientProperty("taskType", type);
+        currentPanel.putClientProperty("panelWidth", width);
         
         bottomPanel.setLayout(new BorderLayout(0,0));
         
@@ -72,6 +76,9 @@ public class taskPanelFactory extends JPanel{
         if(type == "PROJECT"){
             taskSettings.setLayout(new GridLayout(3,1));
             taskSettings.setPreferredSize(new Dimension(Integer.MAX_VALUE,90));
+            currentPanel.putClientProperty("taskList", taskList);
+            currentPanel.putClientProperty("bottomPanel", bottomPanel);
+            currentPanel.putClientProperty("taskSettings", taskSettings);
         }else{
             taskSettings.setLayout(new GridLayout(1,1));
             taskSettings.setPreferredSize(new Dimension(Integer.MAX_VALUE,30));
@@ -314,4 +321,48 @@ public class taskPanelFactory extends JPanel{
         
         return(currentPanel);
     }    
+
+    public JPanel attachExistingTaskToProjectPanel(ProjectTask projectTask, JPanel projectPanel, SimpleTask simpleTask, int width){
+        if(projectPanel == null || simpleTask == null){
+            return null;
+        }
+        JPanel taskList = (JPanel) projectPanel.getClientProperty("taskList");
+        if(taskList == null){
+            return null;
+        }
+        Integer storedWidth = (Integer) projectPanel.getClientProperty("panelWidth");
+        int panelWidth = storedWidth != null ? storedWidth : width;
+        JPanel simplePanel = createNewTaskPanel(simpleTask, "SIMPLE", panelWidth);
+        taskList.add(simplePanel);
+
+        JPanel bottomPanel = (JPanel) projectPanel.getClientProperty("bottomPanel");
+        JPanel taskSettings = (JPanel) projectPanel.getClientProperty("taskSettings");
+        int simpleHeight = simplePanel.getPreferredSize().height;
+        int targetWidth = projectPanel.getPreferredSize().width > 0 ? projectPanel.getPreferredSize().width : (int)(panelWidth*0.875);
+
+        Dimension listPref = taskList.getPreferredSize();
+        taskList.setPreferredSize(new Dimension(targetWidth, listPref.height + simpleHeight));
+
+        if(bottomPanel != null){
+            if(taskSettings != null){
+                BorderLayout layout = (BorderLayout) bottomPanel.getLayout();
+                if(layout.getLayoutComponent(BorderLayout.NORTH) == null){
+                    bottomPanel.add(taskSettings, BorderLayout.NORTH);
+                }
+            }
+            Dimension bottomPref = bottomPanel.getPreferredSize();
+            bottomPanel.setPreferredSize(new Dimension(targetWidth, bottomPref.height + simpleHeight));
+            bottomPanel.revalidate();
+            bottomPanel.repaint();
+        }
+
+        Dimension panelPref = projectPanel.getPreferredSize();
+        projectPanel.setPreferredSize(new Dimension(targetWidth, panelPref.height + simpleHeight));
+        taskList.revalidate();
+        taskList.repaint();
+        projectPanel.revalidate();
+        projectPanel.repaint();
+
+        return simplePanel;
+    }
 }

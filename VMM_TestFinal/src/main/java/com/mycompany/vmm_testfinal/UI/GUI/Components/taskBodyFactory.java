@@ -36,6 +36,7 @@ public class taskBodyFactory extends JPanel{
     static JTextArea taskDescription;
     static JLabel Status = new JLabel();
     static JLabel Deadline = new JLabel();
+    private static Task currentTask;
     
     public static JPanel createBody(Task task, int width, int height){
         
@@ -50,6 +51,7 @@ public class taskBodyFactory extends JPanel{
         JScrollPane scrollPane;
         
         //BODY
+        currentTask = task;
         JPanel Body = new JPanel();
         Body.setBackground(Color.BLACK);
         Body.setLayout(new BorderLayout());
@@ -265,7 +267,6 @@ public class taskBodyFactory extends JPanel{
             
                 JLabel Save_Button = new JLabel();
                 Save_Button.setPreferredSize(new Dimension(65,65));
-//                Save_Button.setIcon(save);
                 Save_Button.setHorizontalAlignment(JLabel.CENTER);
                 Save_Button.setVerticalAlignment(JLabel.CENTER);
                 Save_Button.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
@@ -292,58 +293,12 @@ public class taskBodyFactory extends JPanel{
                         information[2] = Status.getText();
                         information[3] = Deadline.getText();
                         
-                        SaveTaskCommand stc = new SaveTaskCommand();
-//                        Observer tpf = new taskPanelFactory();
-//                        stc.addObserver(tpf);
-                        
+                        Task activeTask = getCurrentTask();
+                        SaveTaskCommand stc = (activeTask != null) ? new SaveTaskCommand(activeTask) : new SaveTaskCommand();
+
                         stc.saveTask(information);
                         taskControl.setCommand(stc);
                         taskControl.clickedButton();
-
-//                          task.Save(information);
-
-//                        String type = "";
-//                        String title = taskTitle.getText();
-//                        String description = taskDescription.getText();
-//                        String status = Status.getText().substring(9);
-//                        String deadline = Deadline.getText().substring(11);
-//
-//                        System.out.println(title+" "+description+"||"+status+" "+deadline);
-
-//                        BorderLayout layout = (BorderLayout) currentlySelectedPanel.getLayout();
-//                        Component centermostComponent = layout.getLayoutComponent(BorderLayout.CENTER);
-//                        Component leftmostComponent = layout.getLayoutComponent(BorderLayout.WEST);
-//
-//                        if(centermostComponent instanceof JLabel){
-//                            ((JLabel)centermostComponent).setText(title);
-//                        }
-//                        if(((JLabel)leftmostComponent).getIcon()==complete_simpletask||
-//                           ((JLabel)leftmostComponent).getIcon()==ongoing_simpletask||
-//                           ((JLabel)leftmostComponent).getIcon()==failed_simpletask||
-//                           ((JLabel)leftmostComponent).getIcon()==unknown_simpletask){
-//                            type = "SIMPLE";
-//                        }
-//
-//                        if(leftmostComponent instanceof JLabel){
-//                            if(status.contains("Completed")){
-//                                if(type=="SIMPLE") ((JLabel)leftmostComponent).setIcon(complete_simpletask);
-//                                else ((JLabel)leftmostComponent).setIcon(complete_projecttask);
-//                            }else if(status.contains("Ongoing")){
-//                                if(type=="SIMPLE") ((JLabel)leftmostComponent).setIcon(ongoing_simpletask);
-//                                else ((JLabel)leftmostComponent).setIcon(ongoing_projecttask);
-//                            }else if(status.contains("Failed")){
-//                                if(type=="SIMPLE") ((JLabel)leftmostComponent).setIcon(failed_simpletask);
-//                                else ((JLabel)leftmostComponent).setIcon(failed_projecttask);
-//                            }else{
-//                                if(type=="SIMPLE") ((JLabel)leftmostComponent).setIcon(unknown_simpletask);
-//                                else ((JLabel)leftmostComponent).setIcon(unknown_projecttask);
-//                            }
-//                        }
-//
-//                        currentlySelectedTask.setTitle(title);
-//                        currentlySelectedTask.setDescription(description);
-//                        currentlySelectedTask.setStatus(" Status: "+status);
-//                        currentlySelectedTask.setDeadline(" Deadline: "+deadline);
                     }
             });
             JLabel Delete_Button = new JLabel();
@@ -369,10 +324,10 @@ public class taskBodyFactory extends JPanel{
                         if((JOptionPane.showConfirmDialog(null,"Are you sure you want to delete this task?","Confirmation",JOptionPane.YES_NO_OPTION))==0){
                             System.out.println("Task Deleted");
                             DeleteTaskCommand dtc = new DeleteTaskCommand();
-    //                        Observer tpf = new taskPanelFactory();
-    //                        stc.addObserver(tpf);
+//                        Observer tpf = new taskPanelFactory();
+//                        stc.addObserver(tpf);
 
-                            dtc.deleteTask(task);
+                            dtc.deleteTask(getCurrentTask());
                             taskControl.setCommand(dtc);
                             taskControl.clickedButton();
                         }
@@ -427,7 +382,14 @@ public class taskBodyFactory extends JPanel{
         taskDescription.setText(description);
         Status.setText(status);
         Deadline.setText(deadline);
-        
+    }
+    
+    public static void setCurrentTask(Task task){
+        currentTask = task;
+    }
+    
+    public static Task getCurrentTask(){
+        return currentTask;
     }
     
     public static String[] getValues(){

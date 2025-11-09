@@ -7,6 +7,7 @@ package com.mycompany.vmm_testfinal.Patterns.Tasks;
 import com.mycompany.vmm_testfinal.Patterns.Interfaces.Observer;
 import com.mycompany.vmm_testfinal.Patterns.Interfaces.Task;
 import com.mycompany.vmm_testfinal.UI.GUI.Components.sidebarFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +21,8 @@ public class SimpleTask implements Task{
     private String description;
     private String status;
     private String deadline;
+    private Integer projectId = 0;
+    private ProjectTask parentProject;
     //REQUIRED GETTERS
     @Override
     public String getTitle() {
@@ -69,6 +72,36 @@ public class SimpleTask implements Task{
         this.deadline = deadline;
     }
     
+    public int getId(){
+        return id;
+    }
+
+    public void setId(int id){
+        this.id = id;
+    }
+
+    public Integer getProjectId(){
+        return projectId;
+    }
+
+    public void setProjectId(Integer projectId){
+        this.projectId = projectId != null ? projectId : 0;
+    }
+
+    public ProjectTask getParentProject(){
+        return parentProject;
+    }
+
+    public void setParentProject(ProjectTask parentProject){
+        this.parentProject = parentProject;
+        this.projectId = (parentProject != null) ? parentProject.getId() : 0;
+    }
+
+    public void clearParentProject(){
+        this.parentProject = null;
+        this.projectId = 0;
+    }
+
     //COMMAND + PROTOTYPE
         @Override
         public Task Clone() {

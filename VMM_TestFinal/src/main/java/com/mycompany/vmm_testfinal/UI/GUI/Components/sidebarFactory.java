@@ -11,15 +11,24 @@ import com.mycompany.vmm_testfinal.Patterns.Command.UpdateSidebarCommand;
 import com.mycompany.vmm_testfinal.Patterns.Factory.TaskFactory;
 import com.mycompany.vmm_testfinal.Patterns.Interfaces.Task;
 import com.mycompany.vmm_testfinal.Patterns.Prototype.TaskClient;
+import com.mycompany.vmm_testfinal.Patterns.Singleton.DBConnection;
+import com.mycompany.vmm_testfinal.Patterns.Tasks.ProjectTask;
+import com.mycompany.vmm_testfinal.Patterns.Tasks.SimpleTask;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Vector;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
@@ -30,6 +39,9 @@ import javax.swing.JScrollPane;
 public class sidebarFactory {
     
     public static Vector<Task> listOfTasks = new Vector<>();
+    private static final String DESCRIPTION_PREFIX = " Description : ";
+    private static final String STATUS_PREFIX = " Status : ";
+    private static final String DEADLINE_PREFIX = " Deadline : ";
     
     public static JPanel createSidebar(int width){
         //INITIALIZE
@@ -161,7 +173,112 @@ public class sidebarFactory {
         Sidebar_Lip.add(NewSimpleTask_Button);
         Sidebar_Lip.add(newProjectTask_Button);
         Sidebar.add(Sidebar_Lip,BorderLayout.NORTH);
+
+        loadExistingTasks(width, taskControl, tpf, udc);
         //RETURN
         return Sidebar;
     }
+
+    private static void loadExistingTasks(int width, CommandControl taskControl, taskPanelFactory tpf, UpdateSidebarCommand udc) {
+        listOfTasks.clear();
+
+        Map<Integer, ProjectTask> projectTaskMap = new LinkedHashMap<>();
+        Map<Integer, JPanel> projectPanelMap = new LinkedHashMap<>();
+
+        try (Connection con = DBConnection.getInstance().getCon()) {
+            String projectSql = "SELECT project_id, name, descr, deadline, status FROM projects ORDER BY project_id";
+            try (PreparedStatement ps = con.prepareStatement(projectSql); ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ProjectTask projectTask = new ProjectTask();
+                    int projectId = rs.getInt("project_id");
+                    projectTask.setId(projectId);
+                    projectTask.setTitle(defaultTitle(rs.getString("name"), "Unnamed Project"));
+                    projectTask.setDescription(ensurePrefixed(DESCRIPTION_PREFIX, rs.getString("descr")));
+                    projectTask.setStatus(formatStatus(rs.getBoolean("status")));
+                    projectTask.setDeadline(formatDeadline(rs.getDate("deadline")));
+
+                    JPanel projectPanel = tpf.createNewTaskPanel(projectTask, "PROJECT", width);
+
+                    projectTaskMap.put(projectId, projectTask);
+                    projectPanelMap.put(projectId, projectPanel);
+                    listOfTasks.add(projectTask);
+
+                    udc.addToSidebar(projectPanel);
+                    taskControl.setCommand(udc);
+                    taskControl.clickedButton();
+                }
+            }
+
+            String todoSql = "SELECT id, project_id, title, descr, due_date, status FROM todos ORDER BY id";
+            try (PreparedStatement ps = con.prepareStatement(todoSql); ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    SimpleTask simpleTask = new SimpleTask();
+                    int todoId = rs.getInt("id");
+                    int projectId = rs.getInt("project_id");
+
+                    simpleTask.setId(todoId);
+                    simpleTask.setTitle(defaultTitle(rs.getString("title"), "Unnamed Task"));
+                    simpleTask.setDescription(ensurePrefixed(DESCRIPTION_PREFIX, rs.getString("descr")));
+                    simpleTask.setStatus(formatStatus(rs.getBoolean("status")));
+                    simpleTask.setDeadline(formatDeadline(rs.getDate("due_date")));
+
+                    if (projectId > 0 && projectTaskMap.containsKey(projectId)) {
+                        ProjectTask parentProject = projectTaskMap.get(projectId);
+                        parentProject.addComponent(simpleTask);
+                        listOfTasks.add(simpleTask);
+
+                        JPanel projectPanel = projectPanelMap.get(projectId);
+                        tpf.attachExistingTaskToProjectPanel(parentProject, projectPanel, simpleTask, width);
+                    } else {
+                        simpleTask.setProjectId(0);
+                        listOfTasks.add(simpleTask);
+
+                        JPanel simplePanel = tpf.createNewTaskPanel(simpleTask, "SIMPLE", width);
+                        udc.addToSidebar(simplePanel);
+                        taskControl.setCommand(udc);
+                        taskControl.clickedButton();
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static String defaultTitle(String dbValue, String fallback) {
+        return (dbValue == null || dbValue.trim().isEmpty()) ? fallback : dbValue.trim();
+    }
+
+    private static String formatStatus(boolean isDone) {
+        return ensurePrefixed(STATUS_PREFIX, isDone ? "Completed" : "Ongoing");
+    }
+
+    private static String formatDeadline(Date dueDate) {
+        if (dueDate == null) {
+            return DEADLINE_PREFIX;
+        }
+        return ensurePrefixed(DEADLINE_PREFIX, dueDate.toLocalDate().toString());
+    }
+
+    private static String ensurePrefixed(String prefix, String value) {
+        String cleaned = stripExistingPrefix(prefix, value);
+        if (cleaned.isEmpty()) {
+            return prefix;
+        }
+        return prefix + cleaned;
+    }
+
+    private static String stripExistingPrefix(String prefix, String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        String normalizedPrefix = prefix.trim().toLowerCase();
+        String normalizedValue = trimmed.toLowerCase();
+        if (normalizedValue.startsWith(normalizedPrefix)) {
+            return trimmed.substring(prefix.trim().length()).trim();
+        }
+        return trimmed;
+    }
+
 }

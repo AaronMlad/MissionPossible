@@ -47,12 +47,14 @@ public class UpdateBodyCommand implements Command{
         if(task!=null){
             System.out.println(task.getTitle()+" "+task.getDescription()+" "+task.getStatus()+" "+task.getDeadline());
             cardLayout.show(Body, "INFO");
+            taskBodyFactory.setCurrentTask(task);
             taskBodyFactory.setValues(task.getTitle(),
                                   task.getDescription(),
                                   task.getStatus(),
                                   task.getDeadline());
         }else{
             cardLayout.show(Body, "EMPTY");
+            taskBodyFactory.setCurrentTask(null);
         }
         Body.revalidate();
         Body.repaint();

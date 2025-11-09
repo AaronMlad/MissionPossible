@@ -14,11 +14,13 @@ public interface Task {
     public String getDescription();
     public String getStatus();
     public String getDeadline();
+    public int getId();
     
     public void setTitle(String title);
     public void setDescription(String deadline);
     public void setStatus(String status);
     public void setDeadline(String deadline);
+    public void setId(int id);
     
     //COMMAND AND PROTOTYPE
     public Task Clone();

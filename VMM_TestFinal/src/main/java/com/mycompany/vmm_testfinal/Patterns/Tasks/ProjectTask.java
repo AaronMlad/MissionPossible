@@ -6,7 +6,9 @@ package com.mycompany.vmm_testfinal.Patterns.Tasks;
 
 import com.mycompany.vmm_testfinal.Patterns.Interfaces.Observer;
 import com.mycompany.vmm_testfinal.Patterns.Interfaces.Task;
+import com.mycompany.vmm_testfinal.Patterns.Tasks.SimpleTask;
 import com.mycompany.vmm_testfinal.UI.GUI.Components.sidebarFactory;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,6 +87,17 @@ public class ProjectTask implements Task{
     public void setDeadline(String deadline) {
         this.deadline = deadline;
     }
+
+    @Override
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public void setId(int id) {
+        this.id = id;
+        syncChildProjectLinks();
+    }
     //
     
     //COMMAND + PROTOTYPE
@@ -125,14 +138,32 @@ public class ProjectTask implements Task{
     //COMPOSITION
     public void addComponent(Task file){
         folder.add(file);
+        if(file instanceof SimpleTask){
+            ((SimpleTask)file).setParentProject(this);
+        }
     }
-    
+
     public void removeComponent(Task file){
         folder.remove(file);
+        if(file instanceof SimpleTask){
+            ((SimpleTask)file).clearParentProject();
+        }
     }
     public boolean checkComponent(Task file){
         if(folder.contains(file)) return true;
         else return false;
+    }
+
+    public List<Task> getComponents(){
+        return Collections.unmodifiableList(folder);
+    }
+
+    private void syncChildProjectLinks(){
+        for(Task file : folder){
+            if(file instanceof SimpleTask){
+                ((SimpleTask)file).setParentProject(this);
+            }
+        }
     }
     
     
